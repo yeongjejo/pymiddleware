@@ -6,6 +6,7 @@ class SingletonManager:
     _instance = None # 싱글톤 용도
 
     station_map = {} # key : 시리얼 | value : 스테이션 ip, 포트
+    scanning = False
 
     bridge = None
 
@@ -21,13 +22,16 @@ class SingletonManager:
         self.station_map[serial] = station_info
 
         # todo 아래부분 추후 삭제 (다른 곳으로 이동)
-        port_num = station_info[1]
+        # port_num = station_info[1]
+        #
+        # UDPServer(port_num, self.bridge).start()
+        #
+        # port6 = (port_num >> 8) & 0xFF
+        # port7 = port_num & 0xFF
+        # connect_station(station_info[0], port6, port7)
 
-        UDPServer(port_num, self.bridge).start()
 
-        port6 = (port_num >> 8) & 0xFF
-        port7 = port_num & 0xFF
-        connect_station(station_info[0], port6, port7)
+
 
 
 

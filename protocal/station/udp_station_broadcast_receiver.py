@@ -46,6 +46,9 @@ class UDPStationBroadcastReceiver(threading.Thread):
             self.ds.bind(('', port))
 
             while self._running:
+                if not SingletonManager().scanning:
+                    continue
+
                 buffer = bytearray(11)  # 수신할 데이터 사이즈 설정
 
                 data, addr = self.ds.recvfrom(len(buffer))  # 데이터 수신
@@ -75,7 +78,7 @@ class UDPStationBroadcastReceiver(threading.Thread):
                     # 채널 정보 저장
                     ch = data[8]
 
-                    self.singleton_manager.add_station(serial, [ip_num, port_num])
+                    self.singleton_manager.add_station(serial, [ip_num, port_num, True])
 
             self.ds.close()
         except Exception as e:

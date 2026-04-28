@@ -7,7 +7,7 @@ def connect_station(ip, port6, port7):
 
         # UDP 소켓 생성
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(local_ip)
+        # print(local_ip)
 
         # 송신할 데이터 설정
         send_data = bytearray(10)

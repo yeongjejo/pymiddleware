@@ -50,7 +50,7 @@ class DataManager():
                 return
 
         if bridge is not None:
-            bridge.send_test_frame(frame_ori_sensor_data, finger_value)
+            bridge.send_frame_bone(frame_ori_sensor_data, finger_value)
 
 
 
