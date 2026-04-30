@@ -7,17 +7,10 @@ from PySide6.QtWidgets import QFileDialog, QApplication
 from protocal.station.pkl_manager import PklManager
 from singleton_manager import SingletonManager
 
-import joblib
-import numpy as np
-from scipy.spatial.transform import Rotation as R
-
-import time
-
-
 class SignalBridge(QObject):
     frameUpdated = Signal(str)
-    pklUpdated = Signal(str)
     fileSelected = Signal(bool)
+    stationListUpdated = Signal(str)
 
     file_path = ''
 
@@ -48,13 +41,25 @@ class SignalBridge(QObject):
 
     @Slot()
     def pklStart(self):
-
-        print(1)
-
         PklManager(self.file_path).start()
-
-        print(2)
         self.file_path = ''
+
+    @Slot(str)
+    def send_station_list(self, list):
+        # print({"list":list})
+        self.stationListUpdated.emit(json.dumps({"list":list}))
+
+    @Slot(str)
+    def sendConnection(self, message):
+        data = json.loads(message)
+        SingletonManager().player_connect_station(data['index'], data['value'])
+
+    @Slot(str)
+    def setMixmoStart(self, message):
+        data = json.loads(message)
+        index = data['index']
+        if SingletonManager().player[index] is not None:
+            SingletonManager().player[index].check = True
 
 
 

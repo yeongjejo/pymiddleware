@@ -4,10 +4,12 @@ from sensor.sensor_part import SensorPart
 
 
 class DataManager():
-    __sensor_data = {part: [] for part in SensorPart}
+    def __init__(self):
 
-    __acc_pickle_data = []
-    __ori_pickle_data = []
+        self.__sensor_data = {part: [] for part in SensorPart}
+
+        self.__acc_pickle_data = []
+        self.__ori_pickle_data = []
 
     @property
     def sensor_data(self):
@@ -21,7 +23,7 @@ class DataManager():
         self.__sensor_data[key] = value
 
 
-    def set_pickle_data(self, bridge, finger_value):
+    def set_sensor_data(self, bridge, finger_value):
         part_sequence = [SensorPart.WAIST, SensorPart.BACK, SensorPart.RIGHT_UPPER_ARM, SensorPart.RIGHT_LOWER_ARM,
                             SensorPart.LEFT_UPPER_ARM, SensorPart.LEFT_LOWER_ARM, SensorPart.LEFT_UPPER_LEG, SensorPart.LEFT_LOWER_LEG
                             , SensorPart.RIGHT_UPPER_LEG,SensorPart.RIGHT_LOWER_LEG

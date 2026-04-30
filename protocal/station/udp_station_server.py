@@ -27,6 +27,8 @@ class UDPServer(threading.Thread):
         self._running = True
         self.port = port
         self.bridge = bridge
+        self.datamanager = DataManager()
+        self.check = False
 
     def stop(self):
         self._running = False  # 스레드 종료 플래그 설정
@@ -35,10 +37,6 @@ class UDPServer(threading.Thread):
     def run(self):
         self._running = True
 
-        # port = 56775
-        # port = 56572
-        # port = 51115
-        # port = 55000
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind(('', self.port))
         station_info = StationInfo()
@@ -55,6 +53,9 @@ class UDPServer(threading.Thread):
             sock.recv_into(buffer)
 
             # print("데이터 수신 확인")
+            # todo 추후 삭제 또는 이동
+            if not self.check:
+                continue
 
             # 데이터 확인
             receive_station_byte_data = buffer
@@ -133,7 +134,7 @@ class UDPServer(threading.Thread):
 
 
                 # 센서 정보 저장
-                DataManager().sensor_data = [sensor_part, [gyro, acc, mag, quaternion]]
+                self.datamanager.sensor_data = [sensor_part, [gyro, acc, mag, quaternion]]
 
 
             l_finger_e = self.cul_byte_finger_data(receive_station_byte_data[905:907])
@@ -148,18 +149,6 @@ class UDPServer(threading.Thread):
             r_finger_d = self.cul_byte_finger_data(receive_station_byte_data[938:940])
             r_finger_e = self.cul_byte_finger_data(receive_station_byte_data[942:944])
 
-            # if l_finger_e != 0:
-            #     DataManager().test_finger[0] = l_finger_e
-            #     DataManager().test_finger[1] = l_finger_d
-            #     DataManager().test_finger[2] = l_finger_c
-            #     DataManager().test_finger[3] = l_finger_b
-            #     DataManager().test_finger[4] = l_finger_a
-            #
-            #     DataManager().test_finger[5] = r_finger_e
-            #     DataManager().test_finger[6] = r_finger_d
-            #     DataManager().test_finger[7] = r_finger_c
-            #     DataManager().test_finger[8] = r_finger_b
-            #     DataManager().test_finger[9] = r_finger_a
 
             # print("손가락 확인", l_finger_a, l_finger_b, l_finger_c, l_finger_d, l_finger_e)
             # print("손가락 확인", r_finger_a, r_finger_b, r_finger_c, r_finger_d, r_finger_e)
@@ -188,7 +177,7 @@ class UDPServer(threading.Thread):
             # print("-----------------------------")
 
             # print(DataManager().sensor_data)
-            DataManager().set_pickle_data(self.bridge, finger_value)
+            self.datamanager.set_sensor_data(self.bridge, finger_value)
 
         sock.close()
 

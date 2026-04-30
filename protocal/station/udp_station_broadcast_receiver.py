@@ -48,7 +48,6 @@ class UDPStationBroadcastReceiver(threading.Thread):
             while self._running:
                 if not SingletonManager().scanning:
                     continue
-
                 buffer = bytearray(11)  # 수신할 데이터 사이즈 설정
 
                 data, addr = self.ds.recvfrom(len(buffer))  # 데이터 수신
@@ -56,28 +55,26 @@ class UDPStationBroadcastReceiver(threading.Thread):
                 # 클라이언트 IP 주소 및 포트 번호 확인
                 client_ip = addr[0]
                 client_port = addr[1]
-
                 # 아이피 주소 저장
                 ip_num = f"{data[2]}.{data[3]}.{data[4]}.{data[5]}"
-
                 # 시리얼 번호 저장
                 serial = (data[6] << 8) | data[7]  # byte 값을 int로 변환 후 결합
-
                 # print('serial', serial)
                 if serial != 315: #todo 추후 삭제
                     continue
+
                 # print(serial)
                 # print(f"IP 번호: {ip_num}, 시리얼: {serial}, Port6: {port6}, Port7: {port7}, 채널: {ch}")
                 if self.singleton_manager.station_map.get(serial) is None:
                     port_num = self.find_station_port(serial)
-                    # print(port_num)
+                    # print(format(port_num+serial, 'X'))
+                    serial = format(port_num+serial, 'X')
 
                     # port6 = (port_num >> 8) & 0xFF
                     # port7 = port_num & 0xFF
 
                     # 채널 정보 저장
                     ch = data[8]
-
                     self.singleton_manager.add_station(serial, [ip_num, port_num, True])
 
             self.ds.close()
