@@ -11,6 +11,10 @@ class SingletonManager:
     # scanning = True #테스트용
     scanning = False
 
+
+    # 연결된 스테이션 리스트
+    # key : 플레이어 순서 (0~7 총 8명)
+    # value : 스테이션 데이터 수신 쓰레드 (UDP Server)
     player = {
         0 : None,
         1 : None,
@@ -34,6 +38,7 @@ class SingletonManager:
         self.bridge.send_station_list(list(self.station_map.keys()))
 
 
+    # 스테이션 커넥션
     def player_connect_station(self, index, serial):
         port_num = self.station_map[serial][1]
 
