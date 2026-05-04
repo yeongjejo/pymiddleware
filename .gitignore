@@ -1,0 +1,16 @@
+# IDE
+.idea/
+
+# logs
+*.log
+
+# model/data files
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# cache
+__pycache__/
+*.pyc
