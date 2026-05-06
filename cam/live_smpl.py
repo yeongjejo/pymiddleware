@@ -165,13 +165,16 @@ class LiveSmpl(threading.Thread):
         if global_orient.ndim == 3 and global_orient.shape[0] == 1:
             global_orient = global_orient[0]  # (1, 3, 3) -> (3, 3)
 
+
+        # TODO:
+        #  - 축 맞추기 진행 해야됨 (현재 three js 축이랑 안맞음)
+        #  - 아래 방식 말고 다른 방식으로 축 맞춰도됨
         C = np.array([
             [-1, 0, 0],
             [0, 0, -1],
             [0, -1, 0]
         ], dtype=np.float64)
 
-        # 🔥 핵심: 좌표계 변환
         body_pose_new = C @ body_pose @ C.T
         global_orient_new = C @ global_orient @ C.T
 
