@@ -11,11 +11,14 @@ class SignalBridge(QObject):
     frameUpdated = Signal(str)
     fileSelected = Signal(bool)
     stationListUpdated = Signal(str)
+    setLoading= Signal(bool)
+    pklUpdated = Signal(str)
 
     file_path = ''
 
     def __init__(self):
         super().__init__()
+        self.smpl = None
 
 
     @Slot()
@@ -41,7 +44,7 @@ class SignalBridge(QObject):
 
     @Slot()
     def pklStart(self):
-        PklManager(self.file_path).start()
+        # PklManager(self.file_path).start()
         self.file_path = ''
 
     @Slot(str)
@@ -61,6 +64,34 @@ class SignalBridge(QObject):
         if SingletonManager().player[index] is not None:
             SingletonManager().player[index].check = True
 
+    @Slot(bool)
+    def endSensor(self, message):
+        print(1213123123123123)
+        if message:
+            for key, player in SingletonManager().player.items():
+                if player is not None:
+                    SingletonManager().player[key].stop()
+
+            print(SingletonManager().player)
+
+    @Slot(bool)
+    def startCamera(self, message):
+        if message and self.smpl is not None:
+           self.smpl.camera_send_start = True
+
+
+    @Slot(bool)
+    def endCamera(self, message):
+        if message and self.smpl is not None:
+           self.smpl.camera_send_start = False
+
+
+    @Slot(bool)
+    def setTpose(self, message):
+        if message:
+            print(message)
+            SingletonManager().all_tpose()
+
 
 
 
@@ -73,5 +104,12 @@ class SignalBridge(QObject):
 
         # Python -> JS 실시간 전송
         self.frameUpdated.emit(json.dumps(payload))
+
+    def send_start_camera(self, smpl):
+        self.smpl = smpl
+        self.setLoading.emit(False)
+
+
+
 
 

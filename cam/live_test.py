@@ -4,6 +4,7 @@ import argparse
 import os
 import cv2
 import numpy as np
+import time
 
 from hmr2.configs import CACHE_DIR_4DHUMANS
 from hmr2.models import HMR2, download_models, load_hmr2, DEFAULT_CHECKPOINT
@@ -15,12 +16,10 @@ LIGHT_BLUE = (0.65098039, 0.74117647, 0.85882353)
 
 
 def main():
-    import time
 
     rendering = True
     detector_list = ['vitdet', 'regnety']
     selected_detector = detector_list[0]
-
 
     # Download and load checkpoints
     download_models(CACHE_DIR_4DHUMANS)

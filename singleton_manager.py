@@ -11,7 +11,6 @@ class SingletonManager:
     # scanning = True #테스트용
     scanning = False
 
-
     # 연결된 스테이션 리스트
     # key : 플레이어 순서 (0~7 총 8명)
     # value : 스테이션 데이터 수신 쓰레드 (UDP Server)
@@ -49,6 +48,15 @@ class SingletonManager:
         port6 = (port_num >> 8) & 0xFF
         port7 = port_num & 0xFF
         connect_station(self.station_map[serial][0], port6, port7)
+
+
+    # todo 일단 임시로 전체 tpoese 추후 각 플레이어마다 tpose 따로 관리 해야됨
+    def all_tpose(self):
+        print(1)
+        for server in self.player.values():
+            if server is not None:
+                print(2)
+                server.tpose = True
 
 
 

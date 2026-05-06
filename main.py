@@ -1,3 +1,4 @@
+from cam.live_smpl import LiveSmpl
 from protocal.signal_bridge import SignalBridge
 from protocal.station.udp_station_broadcast_receiver import UDPStationBroadcastReceiver
 import subprocess
@@ -68,6 +69,7 @@ def server_stopped():
 
 if __name__ == '__main__':
     UDPStationBroadcastReceiver().start()
+    LiveSmpl().start()
 
     # Front 실행
     project_dir = r"C:\Users\USER\Desktop\4dhmuan-front"

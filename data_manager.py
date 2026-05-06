@@ -51,6 +51,7 @@ class DataManager():
                 print(self.__sensor_data[part][3])
                 return
 
+        # fornt로 데이터 전송
         if bridge is not None:
             bridge.send_frame_bone(frame_ori_sensor_data, finger_value)
 

@@ -164,7 +164,6 @@ def main():
             input_img = np.concatenate([input_img, np.ones_like(input_img[:,:,:1])], axis=2) # Add alpha channel
             input_img_overlay = input_img[:,:,:3] * (1-cam_view[:,:,3:]) + cam_view[:,:,:3] * cam_view[:,:,3:]
 
-            print(255*input_img_overlay[:, :, ::-1].min(), 255*input_img_overlay[:, :, ::-1].max())
             img = (255 * input_img_overlay[:, :, ::-1]).astype(np.uint8)
             h, w = img.shape[:2]
 

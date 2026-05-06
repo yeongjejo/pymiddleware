@@ -10,6 +10,8 @@ from sensor.quaternion import Quaternion
 from sensor.sensor_part import SensorPart
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
+
 
 import torch
 import math
@@ -29,6 +31,20 @@ class UDPServer(threading.Thread):
         self.bridge = bridge
         self.datamanager = DataManager()
         self.check = False
+        self.tpose = False
+
+        self.basic_sensor_part = [SensorPart.LEFT_LOWER_ARM, SensorPart.RIGHT_LOWER_ARM, SensorPart.LEFT_LOWER_LEG,
+                                 SensorPart.RIGHT_LOWER_LEG, SensorPart.BACK, SensorPart.WAIST, SensorPart.LEFT_UPPER_LEG,
+                                      SensorPart.RIGHT_UPPER_LEG, SensorPart.LEFT_UPPER_ARM, SensorPart.RIGHT_UPPER_ARM
+                                    ]
+        self.axis_swap_quat_map = {
+            sensor_part: Quaternion(1.0, 0.0, 0.0, 0.0)
+            for sensor_part in self.basic_sensor_part
+        }
+        self.init_quat_map = {
+            sensor_part: Quaternion(1.0, 0.0, 0.0, 0.0)
+            for sensor_part in self.basic_sensor_part
+        }
 
     def stop(self):
         self._running = False  # 스레드 종료 플래그 설정
@@ -53,9 +69,6 @@ class UDPServer(threading.Thread):
             sock.recv_into(buffer)
 
             # print("데이터 수신 확인")
-            # todo 추후 삭제 또는 이동
-            if not self.check:
-                continue
 
             # 데이터 확인
             receive_station_byte_data = buffer
@@ -115,13 +128,41 @@ class UDPServer(threading.Thread):
                 qX = self.cul_byte_data(sensor_byte_data[41:45])
                 qY = self.cul_byte_data(sensor_byte_data[45:49])
                 qZ = self.cul_byte_data(sensor_byte_data[49:53])
-                quaternion = Quaternion(qW, qX, qY, qZ)
+
+                if qW == 0.0:
+                    continue
+
+                # 파이썬에서는 이렇게 하니깐 각도가 깨짐
+                # hip_leg_part_list = [SensorPart.LEFT_LOWER_LEG, SensorPart.RIGHT_LOWER_LEG,
+                #                     SensorPart.WAIST, SensorPart.LEFT_UPPER_LEG, SensorPart.RIGHT_UPPER_LEG]
+                # if sensor_part in hip_leg_part_list:
+                #     self.axis_swap_quat_map[sensor_part] = Quaternion(qW, qY, -qX, qZ)
+                # else:
+                #     self.axis_swap_quat_map[sensor_part] = Quaternion(qW, qX, qY, qZ)
+
+                self.axis_swap_quat_map[sensor_part] = Quaternion(qW, qX, qY, qZ)
+
+                # todo Tpose 테스트용
+                if sensor_part in self.basic_sensor_part and self.tpose:
+                    self.set_init_quaternion(sensor_part)
+
+                tpose_quat_wxyz = self.convert_to_tpose_quat(sensor_part)
+
+                #
+                if sensor_part in [SensorPart.WAIST, SensorPart.BACK]:
+                    final_quat = Quaternion(tpose_quat_wxyz.w, tpose_quat_wxyz.x, -tpose_quat_wxyz.z, tpose_quat_wxyz.y)
+                elif sensor_part in [SensorPart.RIGHT_LOWER_LEG, SensorPart.RIGHT_UPPER_LEG, SensorPart.RIGHT_UPPER_ARM, SensorPart.RIGHT_LOWER_ARM]:
+                    final_quat = Quaternion(tpose_quat_wxyz.w, tpose_quat_wxyz.y, -tpose_quat_wxyz.z, -tpose_quat_wxyz.x)
+                elif sensor_part in [SensorPart.LEFT_LOWER_LEG, SensorPart.LEFT_UPPER_LEG, SensorPart.LEFT_UPPER_ARM, SensorPart.LEFT_LOWER_ARM]:
+                    final_quat = Quaternion(tpose_quat_wxyz.w, -tpose_quat_wxyz.y, -tpose_quat_wxyz.z, tpose_quat_wxyz.x)
+                else:
+                    final_quat = Quaternion(tpose_quat_wxyz.w, tpose_quat_wxyz.x, tpose_quat_wxyz.y, tpose_quat_wxyz.z)
+
+                final_quat.norm()
 
 
-                sensor_part_list = [SensorPart.LEFT_LOWER_ARM, SensorPart.RIGHT_LOWER_ARM, SensorPart.LEFT_LOWER_LEG,
-                                 SensorPart.RIGHT_LOWER_LEG, SensorPart.BACK, SensorPart.WAIST, SensorPart.LEFT_UPPER_LEG,
-                                      SensorPart.RIGHT_UPPER_LEG, SensorPart.LEFT_UPPER_ARM, SensorPart.RIGHT_UPPER_ARM
-                                    ]
+                # if sensor_part in [SensorPart.RIGHT_UPPER_LEG, SensorPart.RIGHT_LOWER_LEG]:
+                    # print(sensor_part, " : ", self.init_quat_map[sensor_part], self.axis_swap_quat_map[sensor_part], final_quat)
 
                 # print(f"part222 = {sensor_part} w = {quaternion.w}, x = {quaternion.x}, y = {quaternion.y}, z = {quaternion.z}")
                 # if (sensor_part in sensor_part_list and accX == 0.0 and accY == 0.0):
@@ -134,7 +175,7 @@ class UDPServer(threading.Thread):
 
 
                 # 센서 정보 저장
-                self.datamanager.sensor_data = [sensor_part, [gyro, acc, mag, quaternion]]
+                self.datamanager.sensor_data = [sensor_part, [gyro, acc, mag, final_quat]]
 
 
             l_finger_e = self.cul_byte_finger_data(receive_station_byte_data[905:907])
@@ -176,10 +217,16 @@ class UDPServer(threading.Thread):
             #
             # print("-----------------------------")
 
+            self.tpose = False
             # print(DataManager().sensor_data)
-            self.datamanager.set_sensor_data(self.bridge, finger_value)
+            # todo 추후 삭제 또는 이동
+            if self.check:
+                self.datamanager.set_sensor_data(self.bridge, finger_value)
 
         sock.close()
+
+    def set_init_quaternion(self, sensor_part):
+        self.init_quat_map[sensor_part] = Quaternion(self.axis_swap_quat_map[sensor_part].w, self.axis_swap_quat_map[sensor_part].x, self.axis_swap_quat_map[sensor_part].y, self.axis_swap_quat_map[sensor_part].z)
 
     def cul_byte_data(self, sensor_data):
         int_bits = (sensor_data[3] & 0xFF) << 24 | \
@@ -214,6 +261,138 @@ class UDPServer(threading.Thread):
 
         # print(ret)
         return torch.round(ret * 10000) / 10000
+
+    def quat_to_wxyz_array(self, q):
+        """
+        Quaternion 객체 또는 [w, x, y, z] 배열을 numpy 배열로 변환
+        """
+
+        # 사용자 정의 Quaternion 클래스인 경우
+        if hasattr(q, "w") and hasattr(q, "x") and hasattr(q, "y") and hasattr(q, "z"):
+            return np.array([q.w, q.x, q.y, q.z], dtype=np.float64)
+
+        # 이미 list, tuple, np.ndarray인 경우
+        q = np.asarray(q, dtype=np.float64)
+
+        if q.shape != (4,):
+            raise ValueError(f"Quaternion must have 4 values [w, x, y, z], but got shape {q.shape}")
+
+        return q
+
+    def eigen_to_scipy_quat(self, q_wxyz):
+        """
+        Eigen Quaterniond 순서 [w, x, y, z]
+        -> scipy 순서 [x, y, z, w]
+        """
+
+        q_wxyz = self.quat_to_wxyz_array(q_wxyz)
+
+        return np.array([
+            q_wxyz[1],
+            q_wxyz[2],
+            q_wxyz[3],
+            q_wxyz[0]
+        ], dtype=np.float64)
+
+    def scipy_to_eigen_quat(self, q_xyzw):
+        """
+        scipy 순서 [x, y, z, w] -> Eigen Quaterniond 순서 [w, x, y, z]
+        """
+        q_xyzw = np.asarray(q_xyzw, dtype=np.float64)
+        return np.array([q_xyzw[3], q_xyzw[0], q_xyzw[1], q_xyzw[2]], dtype=np.float64)
+
+    def suit_quat2angle(self, q_wxyz):
+        """
+        Quaternion -> Euler angle [x, y, z]
+        """
+
+        # 기존 코드의 self.eigen_to_scipy_quat(self, q_wxyz)는 잘못됨
+        q_xyzw = self.eigen_to_scipy_quat(q_wxyz)
+
+        rot = R.from_quat(q_xyzw)
+
+        euler = rot.as_euler("xyz", degrees=False)
+
+        return euler
+
+    def normalize_quat_xyzw(self, q):
+        q = np.asarray(q, dtype=np.float64)
+        norm = np.linalg.norm(q)
+        if norm == 0:
+            raise ValueError("Quaternion norm is zero")
+        return q / norm
+
+    def convert_to_tpose_quat(self, sensor_part):
+        # print(self.axis_swap_quat)
+
+        # Quaternion 객체에서 [w, x, y, z] 배열로 변환
+        present_quat_wxyz = self.quat_to_wxyz_array(self.axis_swap_quat_map[sensor_part])
+        init_quat_wxyz = self.quat_to_wxyz_array(self.init_quat_map[sensor_part])
+
+        # scipy용 쿼터니언 변환 [x, y, z, w]
+        present_quat_xyzw = self.normalize_quat_xyzw(
+            self.eigen_to_scipy_quat(present_quat_wxyz)
+        )
+
+        init_quat_xyzw = self.normalize_quat_xyzw(
+            self.eigen_to_scipy_quat(init_quat_wxyz)
+        )
+
+        present_rot = R.from_quat(present_quat_xyzw)
+        init_rot = R.from_quat(init_quat_xyzw)
+
+        # init quaternion의 yaw 추출
+        q2a = self.suit_quat2angle(init_quat_wxyz)
+        yaw = q2a[2]
+
+        # yaw 회전 쿼터니언
+        twist_rot = R.from_quat([
+            0.0,
+            0.0,
+            np.sin(yaw / 2.0),
+            np.cos(yaw / 2.0)
+        ])
+
+        x_axis = twist_rot.apply(np.array([1.0, 0.0, 0.0]))
+        y_axis = twist_rot.apply(np.array([0.0, 1.0, 0.0]))
+        z_axis = twist_rot.apply(np.array([0.0, 0.0, 1.0]))
+
+        # deltaQ = presentQuat * init.conjugate()
+        delta_rot = present_rot * init_rot.inv()
+
+        x_rot = delta_rot.apply(x_axis)
+        y_rot = delta_rot.apply(y_axis)
+        z_rot = delta_rot.apply(z_axis)
+
+        # -yaw 보정
+        minus_yaw = -yaw
+
+        yaw_correction_rot = R.from_quat([
+            0.0,
+            0.0,
+            np.sin(minus_yaw / 2.0),
+            np.cos(minus_yaw / 2.0)
+        ])
+
+        x_rot = yaw_correction_rot.apply(x_rot)
+        y_rot = yaw_correction_rot.apply(y_rot)
+        z_rot = yaw_correction_rot.apply(z_rot)
+
+        x_rot = x_rot / np.linalg.norm(x_rot)
+        y_rot = y_rot / np.linalg.norm(y_rot)
+        z_rot = z_rot / np.linalg.norm(z_rot)
+
+        mat = np.column_stack([x_rot, y_rot, z_rot])
+
+        tpose_rot = R.from_matrix(mat)
+
+        # scipy 결과 [x, y, z, w]
+        tpose_quat_xyzw = self.normalize_quat_xyzw(tpose_rot.as_quat())
+
+        # Eigen 순서 [w, x, y, z]
+        tpose_quat_wxyz = self.scipy_to_eigen_quat(tpose_quat_xyzw)
+
+        return Quaternion(tpose_quat_wxyz[0], tpose_quat_wxyz[1], tpose_quat_wxyz[2], tpose_quat_wxyz[3])
 
     def get_coordinate_dict(self, w, x, y, z, acc_x, acc_y, acc_z):
         acc_init = 1.2

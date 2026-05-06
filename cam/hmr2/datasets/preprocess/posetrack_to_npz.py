@@ -73,7 +73,7 @@ def coco_extract(dataset_path, out_path):
     body_keypoints_2d = all_keypoints_2d[:,:25,:]
     extra_keypoints_2d = all_keypoints_2d[:,25:,:]
 
-    print(f'{extra_keypoints_2d.shape=}')
+    # print(f'{extra_keypoints_2d.shape=}')
 
     # store the data struct
     if not os.path.isdir(out_path):

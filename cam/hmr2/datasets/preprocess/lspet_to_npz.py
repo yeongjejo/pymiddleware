@@ -55,7 +55,7 @@ def hr_lspet_extract(dataset_path, out_path):
     extra_keypoints_2d = np.zeros((len(parts_), 19, 3))
     extra_keypoints_2d[:,:14,:] = np.stack(parts_)[:,:14,:3]
 
-    print(f'{extra_keypoints_2d.shape=}')
+    # print(f'{extra_keypoints_2d.shape=}')
 
     # store the data struct
     if not os.path.isdir(out_path):
