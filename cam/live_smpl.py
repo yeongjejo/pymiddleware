@@ -29,7 +29,7 @@ class LiveSmpl(threading.Thread):
     def run(self):
         rendering = True
         detector_list = ['vitdet', 'regnety']
-        selected_detector = detector_list[0]
+        selected_detector = detector_list[1]
 
         # Download and load checkpoints
         download_models(CACHE_DIR_4DHUMANS)

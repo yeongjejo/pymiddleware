@@ -30,13 +30,14 @@ class UDPServer(threading.Thread):
         self.port = port
         self.bridge = bridge
         self.datamanager = DataManager()
-        self.check = False
+        self.check = False # 프론트로 데이터 전송 여뷰
         self.tpose = False
 
         self.basic_sensor_part = [SensorPart.LEFT_LOWER_ARM, SensorPart.RIGHT_LOWER_ARM, SensorPart.LEFT_LOWER_LEG,
                                  SensorPart.RIGHT_LOWER_LEG, SensorPart.BACK, SensorPart.WAIST, SensorPart.LEFT_UPPER_LEG,
                                       SensorPart.RIGHT_UPPER_LEG, SensorPart.LEFT_UPPER_ARM, SensorPart.RIGHT_UPPER_ARM
                                     ]
+
         self.axis_swap_quat_map = {
             sensor_part: Quaternion(1.0, 0.0, 0.0, 0.0)
             for sensor_part in self.basic_sensor_part
